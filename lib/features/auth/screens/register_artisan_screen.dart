@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 import '../controllers/auth_controllers.dart';
-import '../widgets/input_field.dart';
 import '../../artisans/screens/artisan_home.dart';
 
 class RegisterArtisanScreen extends StatefulWidget {
@@ -12,33 +10,39 @@ class RegisterArtisanScreen extends StatefulWidget {
 }
 
 class _RegisterArtisanScreenState extends State<RegisterArtisanScreen> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _phone = TextEditingController();
   final _name = TextEditingController();
   final _bio = TextEditingController();
+  final _city = TextEditingController();
+  final _state = TextEditingController();
+  final _country = TextEditingController();
   final _auth = AuthController();
 
-  Future<void> _register() async {
-    try {
-      final user = await _auth.registerUser(
-        email: _email.text,
-        password: _password.text,
-        role: "artisan",
-        extraData: {
-          "displayName": _name.text,
-          "bio": _bio.text,
-          "isVerified": false,
-        },
+  bool otpSent = false;
+  final _otpController = TextEditingController();
+
+  Future<void> _sendOtp() async {
+    await _auth.sendOtp(
+      _phone.text.trim(),
+      "artisan",
+      extraData: {
+        "displayName": _name.text,
+        "bio": _bio.text,
+        "city": _city.text,
+        "state": _state.text,
+        "country": _country.text,
+      },
+    );
+    setState(() => otpSent = true);
+  }
+
+  Future<void> _verifyOtp() async {
+    final user = await _auth.verifyOtp(_otpController.text.trim());
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ArtisanHome()),
       );
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ArtisanHome()),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -51,12 +55,19 @@ class _RegisterArtisanScreenState extends State<RegisterArtisanScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              InputField(controller: _email, label: "Email"),
-              InputField(controller: _password, label: "Password", obscure: true),
-              InputField(controller: _name, label: "Full Name"),
-              InputField(controller: _bio, label: "Short Bio"),
+              TextField(controller: _phone, decoration: const InputDecoration(labelText: "Phone (+91...)")),
+              TextField(controller: _name, decoration: const InputDecoration(labelText: "Full Name")),
+              TextField(controller: _bio, decoration: const InputDecoration(labelText: "Bio")),
+              TextField(controller: _city, decoration: const InputDecoration(labelText: "City")),
+              TextField(controller: _state, decoration: const InputDecoration(labelText: "State")),
+              TextField(controller: _country, decoration: const InputDecoration(labelText: "Country")),
+              if (otpSent)
+                TextField(controller: _otpController, decoration: const InputDecoration(labelText: "Enter OTP")),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: _register, child: const Text("Register")),
+              ElevatedButton(
+                onPressed: otpSent ? _verifyOtp : _sendOtp,
+                child: Text(otpSent ? "Verify OTP" : "Send OTP"),
+              ),
             ],
           ),
         ),

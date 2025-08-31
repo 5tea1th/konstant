@@ -4,102 +4,117 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthController {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
+  String? _verificationId;
+  String? _pendingRole; // store role before OTP
+  Map<String, dynamic>? _pendingExtraData;
 
-  // Register new user
-  Future<User?> registerUser({
-    required String email,
-    required String password,
-    required String role, // "artisan" | "consumer" | "admin"
-    Map<String, dynamic>? extraData,
-  }) async {
-    final cred = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
+  // Send OTP for registration/login
+  Future<void> sendOtp(String phoneNumber, String role,
+      {Map<String, dynamic>? extraData}) async {
+    _pendingRole = role;
+    _pendingExtraData = extraData;
+
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        // Auto-verification (Android only)
+        await _auth.signInWithCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        throw Exception(e.message);
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        _verificationId = verificationId;
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        _verificationId = verificationId;
+      },
     );
+  }
 
-    final uid = cred.user!.uid;
+  // Verify OTP and handle registration or login
+  Future<User?> verifyOtp(String smsCode) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: _verificationId!,
+      smsCode: smsCode,
+    );
+    final userCredential = await _auth.signInWithCredential(credential);
+    final user = userCredential.user;
 
-    // --- initialize users/{uid} doc with all fields ---
-    await _firestore.collection("users").doc(uid).set({
-      "uid": uid,
-      "email": email,
-      "phone": extraData?["phone"] ?? null,
-      "displayName": extraData?["displayName"] ?? null,
-      "photoURL": extraData?["photoURL"] ?? null,
-      "role": role,
-      "region": extraData?["region"] ?? null,
-      "isVerified": false,
-      "createdAt": FieldValue.serverTimestamp(),
-      "lastSeen": FieldValue.serverTimestamp(),
-    });
+    if (user == null) return null;
 
-    // --- if artisan, also create artisans/{uid} doc ---
-    if (role == "artisan") {
-      await _firestore.collection("artisans").doc(uid).set({
-        "artisanId": uid,
-        "displayName": extraData?["displayName"] ?? null,
-        "bio": extraData?["bio"] ?? null,
-        "address": {
-          "city": extraData?["city"] ?? null,
-          "state": extraData?["state"] ?? null,
-          "country": extraData?["country"] ?? null,
-        },
-        "location": {
-          "lat": extraData?["lat"] ?? null,
-          "lng": extraData?["lng"] ?? null,
-        },
-        "profilePhotoUrl": null,
-        "introVideoUrl": null,
-        "tags": [],
+    final doc = await _firestore.collection("users").doc(user.uid).get();
+    if (!doc.exists) {
+      // New user → create Firestore doc
+      await _firestore.collection("users").doc(user.uid).set({
+        "uid": user.uid,
+        "phone": user.phoneNumber,
+        "email": null,
+        "displayName": _pendingExtraData?["displayName"] ?? null,
+        "photoURL": null,
+        "role": _pendingRole,
+        "region": _pendingExtraData?["region"] ?? null,
         "isVerified": false,
-        "certId": null,
         "createdAt": FieldValue.serverTimestamp(),
+        "lastSeen": FieldValue.serverTimestamp(),
       });
 
-      // --- also create empty KYC submission doc ---
-      final kycId = _firestore.collection("artisans").doc(uid).collection("kycSubmissions").doc().id;
-      await _firestore
-          .collection("artisans")
-          .doc(uid)
-          .collection("kycSubmissions")
-          .doc(kycId)
-          .set({
-        "aadharURL": null,
-        "panURL": null,
-        "selfieURL": null,
-        "status": "pending",
-        "submittedAt": FieldValue.serverTimestamp(),
-        "reviewedAt": null,
-        "reviewedBy": null,
-      });
+      if (_pendingRole == "artisan") {
+        await _firestore.collection("artisans").doc(user.uid).set({
+          "artisanId": user.uid,
+          "displayName": _pendingExtraData?["displayName"] ?? null,
+          "bio": _pendingExtraData?["bio"] ?? null,
+          "address": {
+            "city": _pendingExtraData?["city"] ?? null,
+            "state": _pendingExtraData?["state"] ?? null,
+            "country": _pendingExtraData?["country"] ?? null,
+          },
+          "location": {
+            "lat": _pendingExtraData?["lat"] ?? null,
+            "lng": _pendingExtraData?["lng"] ?? null,
+          },
+          "profilePhotoUrl": null,
+          "introVideoUrl": null,
+          "tags": [],
+          "isVerified": false,
+          "certId": null,
+          "email": null,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+
+        // Init empty KYC
+        final kycId = _firestore
+            .collection("artisans")
+            .doc(user.uid)
+            .collection("kycSubmissions")
+            .doc()
+            .id;
+        await _firestore
+            .collection("artisans")
+            .doc(user.uid)
+            .collection("kycSubmissions")
+            .doc(kycId)
+            .set({
+          "aadharURL": null,
+          "panURL": null,
+          "selfieURL": null,
+          "status": "pending",
+          "submittedAt": FieldValue.serverTimestamp(),
+          "reviewedAt": null,
+          "reviewedBy": null,
+        });
+      }
     }
 
-    return cred.user;
+    return user;
   }
-
-  // Login existing user
-  Future<User?> loginUser({
-    required String email,
-    required String password,
-  }) async {
-    final cred = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    return cred.user;
-  }
-
-  // Fetch role from Firestore
+  //Fetch role
   Future<String?> fetchUserRole(String uid) async {
     final doc = await _firestore.collection("users").doc(uid).get();
-    if (doc.exists) {
-      return doc.data()?["role"] as String?;
-    }
-    return null;
-  }
+    if (!doc.exists) return null;
 
-  // Logout
-  Future<void> logout() async {
-    await _auth.signOut();
+    final data = doc.data();
+    return data?["role"]?.toString();
   }
 }

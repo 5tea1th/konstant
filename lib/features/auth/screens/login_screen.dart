@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-
-import '../../admin/screens/admin_home.dart';
+import '../controllers/auth_controllers.dart';
 import '../../artisans/screens/artisan_home.dart';
 import '../../consumers/screens/consumer_home.dart';
-
-import '../controllers/auth_controllers.dart';
-import '../widgets/input_field.dart';
+import '../../admin/screens/admin_home.dart';
 
 class LoginScreen extends StatefulWidget {
   final String role; // artisan / consumer / admin
@@ -16,19 +13,31 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
   final _auth = AuthController();
 
-  Future<void> _login() async {
+  bool otpSent = false;
+
+  Future<void> _sendOtp() async {
     try {
-      final user = await _auth.loginUser(
-        email: _email.text,
-        password: _password.text,
+      await _auth.sendOtp(_phoneController.text.trim(), widget.role);
+      setState(() => otpSent = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("OTP sent")),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    try {
+      final user = await _auth.verifyOtp(_otpController.text.trim());
       if (user != null) {
         final role = await _auth.fetchUserRole(user.uid);
-
         if (role == "artisan") {
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (_) => const ArtisanHome()));
@@ -41,8 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("OTP verification failed: $e")),
+      );
     }
   }
 
@@ -53,12 +63,23 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            InputField(controller: _email, label: "Email"),
-            InputField(controller: _password, label: "Password", obscure: true),
+            TextField(
+              controller: _phoneController,
+              decoration: const InputDecoration(
+                labelText: "Phone (+91...)",
+              ),
+            ),
+            if (otpSent)
+              TextField(
+                controller: _otpController,
+                decoration: const InputDecoration(labelText: "Enter OTP"),
+              ),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: _login, child: const Text("Login")),
+            ElevatedButton(
+              onPressed: otpSent ? _verifyOtp : _sendOtp,
+              child: Text(otpSent ? "Verify OTP" : "Send OTP"),
+            ),
           ],
         ),
       ),
