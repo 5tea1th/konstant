@@ -35,10 +35,13 @@ class AuthController {
 
   // Verify OTP and handle registration or login
   Future<User?> verifyOtp(String smsCode) async {
+    if (_verificationId == null) return null;
+
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationId!,
       smsCode: smsCode,
     );
+
     final userCredential = await _auth.signInWithCredential(credential);
     final user = userCredential.user;
 
@@ -50,57 +53,53 @@ class AuthController {
       await _firestore.collection("users").doc(user.uid).set({
         "uid": user.uid,
         "phone": user.phoneNumber,
-        "email": null,
-        "displayName": _pendingExtraData?["displayName"] ?? null,
-        "photoURL": null,
         "role": _pendingRole,
-        "region": _pendingExtraData?["region"] ?? null,
+        "displayName": null, // can be updated later
+        "email": null, // can update later
+        "photoURL": null, // can update later
+        "region": null, // can update later
         "isVerified": false,
         "createdAt": FieldValue.serverTimestamp(),
         "lastSeen": FieldValue.serverTimestamp(),
       });
 
       if (_pendingRole == "artisan") {
+        // Create artisan profile doc
         await _firestore.collection("artisans").doc(user.uid).set({
           "artisanId": user.uid,
-          "displayName": _pendingExtraData?["displayName"] ?? null,
-          "bio": _pendingExtraData?["bio"] ?? null,
+          "displayName": null,
+          "bio": null,
           "address": {
-            "city": _pendingExtraData?["city"] ?? null,
-            "state": _pendingExtraData?["state"] ?? null,
-            "country": _pendingExtraData?["country"] ?? null,
+            "address_line_1" : null,
+            "address_line_2" : null,
+            "city": null,
+            "state": null,
+            "country": null,
           },
           "location": {
-            "lat": _pendingExtraData?["lat"] ?? null,
-            "lng": _pendingExtraData?["lng"] ?? null,
+            "lat": null,
+            "lng": null,
           },
           "profilePhotoUrl": null,
           "introVideoUrl": null,
           "tags": [],
           "isVerified": false,
           "certId": null,
-          "email": null,
           "createdAt": FieldValue.serverTimestamp(),
         });
 
-        // Init empty KYC
-        final kycId = _firestore
-            .collection("artisans")
-            .doc(user.uid)
-            .collection("kycSubmissions")
-            .doc()
-            .id;
+        // Init KYC status
         await _firestore
             .collection("artisans")
             .doc(user.uid)
             .collection("kycSubmissions")
-            .doc(kycId)
+            .doc("main") // single doc for simplicity
             .set({
           "aadharURL": null,
           "panURL": null,
           "selfieURL": null,
-          "status": "pending",
-          "submittedAt": FieldValue.serverTimestamp(),
+          "status": "not_submitted", // default
+          "submittedAt": null,
           "reviewedAt": null,
           "reviewedBy": null,
         });
@@ -109,12 +108,11 @@ class AuthController {
 
     return user;
   }
-  //Fetch role
+
+  // Fetch user role
   Future<String?> fetchUserRole(String uid) async {
     final doc = await _firestore.collection("users").doc(uid).get();
     if (!doc.exists) return null;
-
-    final data = doc.data();
-    return data?["role"]?.toString();
+    return doc.data()?["role"]?.toString();
   }
 }

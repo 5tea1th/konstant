@@ -44,7 +44,7 @@ class _RegisterConsumerScreenState extends State<RegisterConsumerScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _phone, decoration: const InputDecoration(labelText: "Phone (+91...)")),
+            TextField(controller: _phone, decoration: const InputDecoration(labelText: "Phone (eg +911234567890)")),
             TextField(controller: _name, decoration: const InputDecoration(labelText: "Full Name")),
             if (otpSent)
               TextField(controller: _otpController, decoration: const InputDecoration(labelText: "Enter OTP")),

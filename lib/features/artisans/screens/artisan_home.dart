@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'artisan_onboarding_page.dart';
+
 class ArtisanHome extends StatelessWidget {
   const ArtisanHome({super.key});
 
@@ -13,6 +15,13 @@ class ArtisanHome extends StatelessWidget {
           children: [
             const Text("Welcome Artisan!", style: TextStyle(fontSize: 20)),
             const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ArtisanOnboardingPage()));
+              },
+              child: const Text("Onboarding"),
+            ),
             ElevatedButton(
               onPressed: () {
                 // TODO: Navigate to upload product screen
