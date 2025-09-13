@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import '../controllers/artisan_onboarding_controller.dart';
 import 'artisan_home.dart';
 
-
 class ArtisanOnboardingPage extends StatefulWidget {
   const ArtisanOnboardingPage({super.key});
 
@@ -17,12 +16,14 @@ class _ArtisanOnboardingPageState extends State<ArtisanOnboardingPage> {
   final _picker = ImagePicker();
   final _controller = ArtisanOnboardingController();
 
-  String displayName = '';
-  String addressLine1 = '';
-  String addressLine2 = '';
-  String city = '';
-  String state = '';
-  String country = '';
+  // ✅ TextEditingControllers
+  final displayNameController = TextEditingController();
+  final address1Controller = TextEditingController();
+  final address2Controller = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final countryController = TextEditingController();
+
   File? aadhaarFile;
   File? panFile;
   File? selfieFile;
@@ -59,16 +60,14 @@ class _ArtisanOnboardingPageState extends State<ArtisanOnboardingPage> {
       return;
     }
 
-    _formKey.currentState!.save();
-
     try {
       await _controller.submitOnboarding(
-        displayName: displayName,
-        addressLine1: addressLine1,
-        addressLine2: addressLine2,
-        city: city,
-        state: state,
-        country: country,
+        displayName: displayNameController.text.trim(),
+        addressLine1: address1Controller.text.trim(),
+        addressLine2: address2Controller.text.trim(),
+        city: cityController.text.trim(),
+        state: stateController.text.trim(),
+        country: countryController.text.trim(),
         aadhaarFile: aadhaarFile!,
         panFile: panFile!,
         selfieFile: selfieFile!,
@@ -88,6 +87,17 @@ class _ArtisanOnboardingPageState extends State<ArtisanOnboardingPage> {
   }
 
   @override
+  void dispose() {
+    displayNameController.dispose();
+    address1Controller.dispose();
+    address2Controller.dispose();
+    cityController.dispose();
+    stateController.dispose();
+    countryController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Artisan Onboarding')),
@@ -98,39 +108,39 @@ class _ArtisanOnboardingPageState extends State<ArtisanOnboardingPage> {
           child: ListView(
             children: [
               TextFormField(
+                controller: displayNameController,
                 decoration: const InputDecoration(labelText: 'Display Name'),
                 validator: (v) => v!.isEmpty ? 'Enter your name' : null,
-                onSaved: (v) => displayName = v!,
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: address1Controller,
                 decoration: const InputDecoration(labelText: 'Address Line 1'),
                 validator: (v) => v!.isEmpty ? 'Enter address line 1' : null,
-                onSaved: (v) => addressLine1 = v!,
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: address2Controller,
                 decoration: const InputDecoration(labelText: 'Address Line 2'),
                 validator: (v) => v!.isEmpty ? 'Enter address line 2' : null,
-                onSaved: (v) => addressLine2 = v!,
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: cityController,
                 decoration: const InputDecoration(labelText: 'City'),
                 validator: (v) => v!.isEmpty ? 'Enter city' : null,
-                onSaved: (v) => city = v!,
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: stateController,
                 decoration: const InputDecoration(labelText: 'State'),
                 validator: (v) => v!.isEmpty ? 'Enter state' : null,
-                onSaved: (v) => state = v!,
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: countryController,
                 decoration: const InputDecoration(labelText: 'Country'),
                 validator: (v) => v!.isEmpty ? 'Enter country' : null,
-                onSaved: (v) => country = v!,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(

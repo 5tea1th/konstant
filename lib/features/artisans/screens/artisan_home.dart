@@ -1,48 +1,36 @@
 import 'package:flutter/material.dart';
-
-import 'artisan_onboarding_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'artisan_dashboard.dart';
+import 'artisan_pending_rejected.dart';
 
 class ArtisanHome extends StatelessWidget {
   const ArtisanHome({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Artisan Dashboard")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Welcome Artisan!", style: TextStyle(fontSize: 20)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ArtisanOnboardingPage()));
-              },
-              child: const Text("Onboarding"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Navigate to upload product screen
-              },
-              child: const Text("Upload Product"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Navigate to certificate screen
-              },
-              child: const Text("View Certificate"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Navigate to reels
-              },
-              child: const Text("My Reels"),
-            ),
-          ],
-        ),
-      ),
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final artisanDoc = FirebaseFirestore.instance.collection('artisans').doc(uid);
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: artisanDoc.snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+        final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final kycStatus = data['kycStatus'] ?? 'pending';
+
+        if (kycStatus == 'pending') {
+          return const ArtisanPendingPage();
+        } else if (kycStatus == 'rejected') {
+          return const ArtisanRejectedPage();
+        } else if (kycStatus == 'accepted') {
+          return const ArtisanDashboard();
+        }
+
+        return const Scaffold(body: Center(child: Text('Unknown status')));
+      },
     );
   }
 }
+

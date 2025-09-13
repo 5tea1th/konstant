@@ -6,7 +6,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ArtisanOnboardingController {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  final _storage = FirebaseStorage.instance;
+  final _storage = FirebaseStorage.instanceFor(
+    bucket: "artisan-app-media",
+  );
 
   Future<void> submitOnboarding({
     required String displayName,
@@ -36,14 +38,12 @@ class ArtisanOnboardingController {
     await selfieRef.putFile(selfieFile);
     final selfieUrl = await selfieRef.getDownloadURL();
 
-    // Update artisan doc
+    // ✅ Update artisan doc (merge to keep existing fields)
     await _firestore.collection('artisans').doc(uid).set({
-      'artisanId': uid,
       'displayName': displayName,
-      'bio': null,
       'address': {
-        'address_line_1': addressLine1,
-        'address_line_2': addressLine2,
+        'addressLine1': addressLine1,
+        'addressLine2': addressLine2,
         'city': city,
         'state': state,
         'country': country,
@@ -52,16 +52,10 @@ class ArtisanOnboardingController {
         'lat': lat,
         'lng': lng,
       },
-      'profilePhotoUrl': null,
-      'introVideoUrl': null,
-      'tags': [],
-      'isVerified': false,
-      'certId': '',
       'kycStatus': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
 
-    // KYC submission
+    // ✅ Add KYC submission
     await _firestore
         .collection('artisans')
         .doc(uid)
@@ -73,14 +67,12 @@ class ArtisanOnboardingController {
       'selfieUrl': selfieUrl,
       'status': 'pending',
       'submittedAt': FieldValue.serverTimestamp(),
-      'reviewedAt': null,
-      'reviewedBy': null,
     });
 
-    // Update users collection
-    await _firestore.collection('users').doc(uid).update({
+    // ✅ Update users collection safely (merge)
+    await _firestore.collection('users').doc(uid).set({
       'displayName': displayName,
       'region': city,
-    });
+    }, SetOptions(merge: true));
   }
 }

@@ -70,8 +70,8 @@ class AuthController {
           "displayName": null,
           "bio": null,
           "address": {
-            "address_line_1" : null,
-            "address_line_2" : null,
+            "addressLine1" : null,
+            "addressLine2" : null,
             "city": null,
             "state": null,
             "country": null,
