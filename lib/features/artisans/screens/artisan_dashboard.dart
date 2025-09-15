@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'artisan_product.dart';
 import 'artisan_profile.dart';
 import 'artisan_reel.dart';
