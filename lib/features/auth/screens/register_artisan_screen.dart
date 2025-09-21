@@ -26,10 +26,7 @@ class _RegisterArtisanScreenState extends State<RegisterArtisanScreen> {
       return;
     }
 
-    await _auth.sendOtp(
-      _phone.text.trim(),
-      "artisan",
-    );
+    await _auth.sendOtp(_phone.text.trim(), "artisan");
     setState(() => otpSent = true);
   }
 
@@ -38,12 +35,12 @@ class _RegisterArtisanScreenState extends State<RegisterArtisanScreen> {
     if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ArtisanOnboardingPage())
+        MaterialPageRoute(builder: (_) => const ArtisanOnboardingPage()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid OTP")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid OTP")));
     }
   }
 
@@ -58,7 +55,8 @@ class _RegisterArtisanScreenState extends State<RegisterArtisanScreen> {
             TextField(
               controller: _phone,
               decoration: const InputDecoration(
-                  labelText: "Phone (eg +911234567890)"),
+                labelText: "Phone (eg +911234567890)",
+              ),
               keyboardType: TextInputType.phone,
             ),
             if (otpSent)

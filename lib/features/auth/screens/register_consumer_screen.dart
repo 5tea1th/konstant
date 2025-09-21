@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/auth_controllers.dart';
-import '../../consumers/screens/consumer_home.dart';
+import '../../consumers/screens/consumer_dashboard.dart';
 
 class RegisterConsumerScreen extends StatefulWidget {
   const RegisterConsumerScreen({super.key});
@@ -44,10 +44,21 @@ class _RegisterConsumerScreenState extends State<RegisterConsumerScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _phone, decoration: const InputDecoration(labelText: "Phone (eg +911234567890)")),
-            TextField(controller: _name, decoration: const InputDecoration(labelText: "Full Name")),
+            TextField(
+              controller: _phone,
+              decoration: const InputDecoration(
+                labelText: "Phone (eg +911234567890)",
+              ),
+            ),
+            TextField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: "Full Name"),
+            ),
             if (otpSent)
-              TextField(controller: _otpController, decoration: const InputDecoration(labelText: "Enter OTP")),
+              TextField(
+                controller: _otpController,
+                decoration: const InputDecoration(labelText: "Enter OTP"),
+              ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: otpSent ? _verifyOtp : _sendOtp,

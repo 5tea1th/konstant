@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'artisan_product.dart';
 import 'artisan_profile.dart';
 import 'artisan_reel.dart';
-
+import 'artisan_account_page.dart';
+import 'artisan_certificates.dart';
 
 class ArtisanDashboard extends StatelessWidget {
   const ArtisanDashboard({super.key});
@@ -18,15 +19,18 @@ class ArtisanDashboard extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ArtisanProfile()),
+                MaterialPageRoute(
+                  builder: (_) => const ArtisanAccountScreen(),
+                ), // Changed this line
               ),
               child: const Text("Profile"),
             ),
             ElevatedButton(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Certificate feature coming soon")),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArtisanCertsPage()),
               ),
-              child: const Text("View Certificate"),
+              child: const Text("Certificates"),
             ),
             ElevatedButton(
               onPressed: () => Navigator.push(

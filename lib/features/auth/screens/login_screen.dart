@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../controllers/auth_controllers.dart';
 import '../../artisans/screens/artisan_home.dart';
-import '../../consumers/screens/consumer_home.dart';
+import '../../consumers/screens/consumer_dashboard.dart';
 import '../../admin/screens/admin_home.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,13 +23,13 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await _auth.sendOtp(_phoneController.text.trim(), widget.role);
       setState(() => otpSent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("OTP sent")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("OTP sent")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -37,22 +37,28 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await _auth.verifyOtp(_otpController.text.trim());
       if (user != null) {
-        final role = await _auth.fetchUserRole(user.uid);
-        if (role == "artisan") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => const ArtisanHome()));
-        } else if (role == "consumer") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => const ConsumerHome()));
-        } else if (role == "admin") {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => const AdminHome()));
+        // Use widget.role instead of fetching from database
+        if (widget.role == "artisan") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ArtisanHome()),
+          );
+        } else if (widget.role == "consumer") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ConsumerHome()),
+          );
+        } else if (widget.role == "admin") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminHome()),
+          );
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("OTP verification failed: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("OTP verification failed: $e")));
     }
   }
 
@@ -66,9 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             TextField(
               controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: "Phone (+91...)",
-              ),
+              decoration: const InputDecoration(labelText: "Phone (+91...)"),
             ),
             if (otpSent)
               TextField(
